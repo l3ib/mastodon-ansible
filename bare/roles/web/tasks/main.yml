@@ -14,24 +14,31 @@
     apply:
       become: true
 
-#RHEL uses firewall-cmd
-- include_tasks: ufw.yml
+- include_tasks: oracle-iptables.yml
   args:
     apply:
       become: true
       tags:
         - firewall
-  when: 
-  - ansible_os_family == "Debian"
 
-- include_tasks: firewall-cmd.yml
-  args:
-    apply:
-      become: true
-      tags:
-        - firewall
-  when: 
-  - ansible_os_family == "RedHat"
+# #RHEL uses firewall-cmd
+# - include_tasks: ufw.yml
+#   args:
+#     apply:
+#       become: true
+#       tags:
+#         - firewall
+#   when: 
+#   - ansible_os_family == "Debian"
+
+# - include_tasks: firewall-cmd.yml
+#   args:
+#     apply:
+#       become: true
+#       tags:
+#         - firewall
+#   when: 
+#   - ansible_os_family == "RedHat"
 
 - include_tasks: mastodon-preflight.yml
   args:
