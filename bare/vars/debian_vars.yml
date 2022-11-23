@@ -33,6 +33,7 @@ packages:
   - package: "systemd"
   - package: "ufw"
   - package: "unattended-upgrades"
+  - package: "vnstat"
   - package: "yarn"
   - package: "zlib1g-dev"
   - package: "libssl-dev"
