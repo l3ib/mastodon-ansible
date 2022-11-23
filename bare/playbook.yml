@@ -43,3 +43,23 @@
     - web
   tags:
     - web
+
+- hosts: all
+  vars_files:
+    - "vars/common.yml"
+    - ["vars/{{ ansible_os_family|lower }}_vars.yml"]
+  tasks:
+    - include_tasks: roles/web/tasks/oracle-iptables.yml
+      args:
+        apply:
+          become: true
+          tags:
+            - firewall
+  tags: 
+    - firewall
+  handlers:
+    - name: save iptables
+      ansible.builtin.command:
+        cmd: iptables-save -f /etc/iptables/rules.v4
+      become: true
+

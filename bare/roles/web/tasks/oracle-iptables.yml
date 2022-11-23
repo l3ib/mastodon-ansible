@@ -1,9 +1,11 @@
 - name: Allow connections on port 80 and 443
   ansible.builtin.iptables:
+    action: insert
+    rule_num: 5
     chain: INPUT
     protocol: tcp
-    destination_ports:
-      - "80"
-      - "443"
+    destination_ports: ["80", "443"]
+    ctstate: ["NEW"]
     jump: ACCEPT
-  
+  notify:
+    - save iptables
