@@ -7,5 +7,7 @@
     destination_ports: ["80", "443"]
     ctstate: ["NEW"]
     jump: ACCEPT
-  notify:
-    - save iptables
+
+- name: Persist iptables
+  ansible.builtin.command:
+    cmd: iptables-save -f /etc/iptables/rules.v4

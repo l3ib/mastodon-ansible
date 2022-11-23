@@ -18,8 +18,6 @@
   args:
     apply:
       become: true
-      tags:
-        - firewall
 
 - include_tasks: mastodon-preflight.yml
   args:
