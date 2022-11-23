@@ -54,9 +54,9 @@
         apply:
           become: true
           tags:
-            - firewall
+            - web
   tags: 
-    - firewall
+    - web
   handlers:
     - name: save iptables
       ansible.builtin.command:
