@@ -1,2 +1,0 @@
-- name: restart caddy webserver
-  command: docker restart caddy_caddy_1
