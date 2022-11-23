@@ -6,38 +6,6 @@
   with_items:
   - redis
 
-- name: Set Redis password for RHEL8 system
-  become: yes
-  lineinfile:
-    dest: "/etc/redis.conf"
-    regexp: "ˆrequirepass"
-    line: "requirepass {{ redis_pass }}"
-    state: present
-  when: 
-  - ansible_os_family == "RedHat" 
-  - ansible_facts['distribution_major_version'] == "8"
-
-- name: Set Redis password for RHEL9 system
-  become: yes
-  lineinfile:
-    dest: "/etc/redis/redis.conf"
-    regexp: "ˆrequirepass"
-    line: "requirepass {{ redis_pass }}"
-    state: present
-  when: 
-  - ansible_os_family == "RedHat" 
-  - ansible_facts['distribution_major_version'] == "9"  
-
-- name: Set Redis password for Debian system
-  become: yes
-  lineinfile:
-    dest: "/etc/redis/redis.conf"
-    regexp: "ˆrequirepass"
-    line: "requirepass {{ redis_pass }}"
-    state: present
-  when: 
-  - ansible_os_family == "Debian"
-
 - name: Restart Redis
   become: yes
   #Workaround for "Interactive authentication required" issue
