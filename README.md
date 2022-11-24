@@ -49,6 +49,12 @@ To see a list of available environment variables for your Mastodon installation,
 
 ## Post-playbook steps
 
+### Create your admin user
+
+https://docs.joinmastodon.org/admin/setup/#admin-cli
+
+### Sysadmin stuff
+
 An an exercise for the reader, consider implementing the following on the server manually or by augmenting this playbook:
 
 * offsite backups (https://docs.joinmastodon.org/admin/backups/)
