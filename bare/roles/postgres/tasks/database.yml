@@ -15,11 +15,19 @@
     - ansible_os_family == "RedHat"
     - not postgres_data.stat.exists
 
+- name: "Install postgresql.conf tuned for OCI free tier machine"
+  ansible.builtin.copy:
+    src: ../files/postgresql.conf
+    dest: /etc/postgresql/14/main/postgresql.conf
+    owner: postgres
+    group: postgres
+    mode: '0644'
+
 - name: "Start and enable services"
   become: true
   #Workaround for "Interactive authentication required" issue
   become_user: root
-  service: "name={{ item }} state=started enabled=yes"
+  service: "name={{ item }} state=restarted enabled=yes"
   with_items:
     - postgresql
 
