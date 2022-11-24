@@ -1,57 +1,37 @@
-# [![test](https://github.com/mastodon/mastodon-ansible/actions/workflows/test.yml/badge.svg)](https://github.com/mastodon/mastodon-ansible/actions/workflows/test.yml) Ansible playbook for installing Mastodon
+# mastodon-ansible (l3ib edition)
 
-This playbook contains several roles for provisioning a ready-to-go Mastodon instance.
+This playbook is forked from the official [mastodon ansible](https://github.com/mastodon/mastodon-ansible) playbook. It is intended to be used on the free server that you can get from Oracle Cloud Infrastructure. You should be able to go from nothing to a working mastodon server in about an hour, even if you've never installed or used any of the tools before, assuming you have some sysadmin experience. All for $0.
 
-## Prerequisites for running the playbook
+## Audience
 
-- Python 3.x
-- Virtualenv (>= 15.0.3)
-- pip/python-pip (>= 8.x)
-
-for testing purposes:
-
-- Vagrant >= 2.2.19
+This playbook is intended for experienced sysadmins who understand and accept the risks of deploying a social media server on free-tier hosting. It has only been tested against the server provided by the terraform repo in the first step.
 
 ## Setup
 
-```sh
-$ virtualenv -p /usr/bin/python3 env
-$ source env/bin/activate
-$ git clone https://github.com/mastodon/mastodon-ansible.git
-$ cd mastodon-ansible
-$ pip install -r requirements.txt
-```
-## Running the playbooks
+### Getting a free server
 
-### Bare
+Follow the steps (and pay attention to the disclaimer) from here: https://github.com/Fitzsimmons/oracle-always-free-vps
 
-This playbook is intended to be run on a "bare" (virtual) server, with the support for provisioning the Mastodon stack as well as a PostgresSQL and Redis database.
+### Domain
 
-Typing secret content directly at the command line (without a prompt) leaves the secret string in your shell history. You should use [Ansible Vault](https://docs.ansible.com/ansible/latest/user_guide/vault.html) to secure your Mastodon database credentials for the use with Ansible instead.
+You need a domain for your mastodon server. Get one and point the DNS at the IP address returned from the previous step.
 
-The `/templates/secrets.yml.tpl` contains an example template that you can use.
-
-To encrypt `secrets.yml`, use this following command:
+### Installing and running ansible
 
 ```sh
-$ ansible-vault encrypt secrets.yml
+virtualenv -p /usr/bin/python3 env
+source env/bin/activate
+git clone https://github.com/mastodon/mastodon-ansible.git
+cd mastodon-ansible
+pip install -r requirements.txt
+ansible-galaxy collection install community.general
 ```
+## Running the playbook
 
-Then run the playbook as following:
 
 ```sh
-$ ansible-playbook playbook.yml --ask-vault-pass -i <your-host-here>, -u <remote-user> --ask-become-pass -e 'ansible_python_interpreter=/usr/bin/python3' --extra-vars="@secrets.yml"
+$ ansible-playbook playbook.yml -i <your-host-here>, -u <remote-user> --extra-vars="mastodon_host=<your-host-here>"
 ```
-
-If you prefer not to use Ansible Vault, you can run the playbook as following:
-
-```sh
-$ ansible-playbook playbook.yml -i <your-host-here>, -u <remote-user> --ask-become-pass -e 'ansible_python_interpreter=/usr/bin/python3' --extra-vars="mastodon_db_password=your-password redis_pass=your-password mastodon_host=example.com"
-```
-
-The playbook is using `become` for some of its tasks, hence the user you connect to the instance with will have to have access to sudo. It should ask you for the password in due time.
-
-_Note: This assumes you're within the virtualenv already._
 
 After the playbook has finished its execution, Mastodon now should be available at the hostname you defined and you're not required run the Mastodon setup wizard. As Email servers differ widely from configuration to configuration **you must edit the .env.production file and add your own email server details followed by restart of Mastodon services.**
 
@@ -67,129 +47,15 @@ systemctl restart mastodon-*.service
 
 To see a list of available environment variables for your Mastodon installation, please refer to [the Mastodon documentation](https://docs.joinmastodon.org/admin/config/).
 
+## Post-playbook steps
 
-#### Roles
+An an exercise for the reader, consider implementing the following on the server manually or by augmenting this playbook:
 
-By default, the playbook runs all of the roles defined here in sequence. You can skip any of them by specifying `--skip-tags=<role-name>`.
+* offsite backups (https://docs.joinmastodon.org/admin/backups/)
+* monitoring/metrics
+	* Mastodon is very storage-hungry, so watch out for that.
+	* Going over the 10TB of outbound traffic provided by the OCI free tier could end up costing you if it's left unchecked. Try running `vnstat` for inspiration.
 
-##### Example
+## WIP
 
-Skipping the `postgres` role:
-
-```sh
-$ ansible-playbook playbook.yml --skip-tags=postgres -i <your-host>, -u <your-user>
-```
-
-#### Preflight Checks
-
-This role verifies that when you're running this playbook, that you're not jumping to a new major or minor version to prevent potential destructive operation.
-You can easily disable this role via a variable.
-
-##### Settings
-
-| config setting  | explanation |
-|-----------------|-------------|
-| run_preflight_checks                   | If set to true, it will run verification
-
-
-#### web
-
-This role contains the following tasks:
-
-- `repositories.yml`: **Adds required package repositories** to pull in the latest software (e.g. yarn, nodejs)
-- `packages.yml`: **Installs all the required packages** for Mastodon to run (see `vars/<distro>_vars.yml` for a list)
-- `ruby.yml`: **Installs rbenv/ruby** globally so you can run Mastodon (it's a Ruby on Rails app)
-- `user.yml`: **Adds a user to run Mastodon with** since you shouldn't be running Mastodon under a privileged account.
-- `firewall-cmd.yml`: **Starts and enables firewall for RHEL based systems** and permitting SSH, HTTP and HTTPS, as not using a firewall is insecure.
-- `ufw.yml`: **Starts and enables firewall for Debian based systems** and permitting SSH, HTTP and HTTPS, as not using a firewall is insecure.
-- `mastodon-preflight.yml`: **Downloads latest version of Mastodon** and required dependencies for installing Ruby.
-- `mastodon-postflight.yml`: **Installs latest version of Mastodon** and all of its required dependencies. This role generates required secrets and installs env.production file, not requiring to run the Mastodon setup wizard.
-- `nginx.yml`: **Installs Mastodon configuration for NGINX** and sets correct SELinux policies for RHEL systems.
-- `nodejs.yml`: **Enables NodeJS 16 DNF module for RHEL 8 systems** to ensure that we have correct NodeJS version installed.
-- `redis.yml`: **Secures Redis installation with a password** as you shouldn't run redis with no password protection.
-- `selfsigned-ssl.yml`: **Generates self-signed SSL certificates when LetsEncrypt not used** as Mastodon requires SSL to function.
-
-##### Settings
-
-| config setting  | explanation |
-|-----------------|-------------|
-| mastodon_host                 | The url where your mastodon instance is reachable. E.g. `example.social`
-| disable_hsts                  | Per default the system will enable [HSTS](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security). You can set this to `true` if you want to disable it.
-| disable_letsencrypt           | Per default the system will attempt to obtain SSL certificate via LetsEncrypt. You can set this to `true` if you want to disable it.
-| use_http                      | Per default the system will use HTTPS and redirect any HTTP traffic to HTTPS. Useful for development or reverse proxy scenarios. You can set this to `true` if you want to enable it.
-| nginx_catch_all               | Per default the system will only show Mastodon for a defined url in mastodon_host. Useful for development or reverse proxy scenarios. Recommended to use with use_http. You can set this to `true` if you want to enable it.
-| mastodon_version               | Specifies which version of Mastodon you want to download. Default is "latest"
-| mastodon_allow_prerelease               | Specifies if you want to download release candidate builds of Mastodon when "latest" is specified. Default is "false".
-
-
-#### PostgresSQL
-
-This role installs PostgresSQL, adds a database (named `mastodon_instance` by default) and a user (named `mastodon` by default). For connecting to the database it can either use a local socket by setting the variable `mastodon_db_login_unix_socket` to the directory the Postgres socket lives in (`/var/run/postgresql` by default under Ubuntu 18.04) or a remote PostgreSQL instance you have installed somewhere else. You will than have to set the `mastodon_db_login_host` (IP address or hostname of database), `mastodon_db_port` (the port the database is accessible on; default `5432`), `mastodon_db_login_user` (the administrative user to connect to the database with) and `mastodon_db_login_password`.
-
-##### Settings
-
-| config setting  | explanation |
-|-----------------|-------------|
-| mastodon_db                   | The database name
-| mastodon_db_user              | Database user for mastodon
-| mastodon_db_password          | Database password for mastodon
-| mastodon_db_login_unix_socket | Unix socket of the local PostgresSQL instance (not needed when using remote connection)
-
-If you configure your PostgresSQL on another server, you need
-to configure these settings additionally:
-
-| config setting  | explanation
-|-----------------|-------------|
-| mastodon_db_login_host     | Host of the PostgresSQL
-| mastodon_db_port           | Port of the PostgresSQL
-| mastodon_db_login_user     | Admin user to connect with
-| mastodon_db_login_password | Password of admin user
-
-
-##### Examples
-
-- Install PostgresSQL, create the database and user:
-
-```sh
-$ ansible-playbook playbook -i <your-host-here>, -u <remote-user> --extra-vars="mastodon_db_password=your-password mastodon_db_login_unix_socket='/var/run/postgresql'"
-```
-
-- PostgreSQL installed on host `mastodob-db`, create the database and the user:
-
-```sh
-$ ansible-playbook playbook -i <your-host-here>, -u <remote-user> --extra-vars="mastodon_db_password=your-password mastodon_db_login_host=mastodon-db mastodon_db_port=5432 mastodon_db_login_user=your-admin-db-user mastodon_db_login_password=your-password"
-```
-
-#### redis
-
-This role installs the [Redis](https://redis.io) key-value store, used by Mastodon, and its client libraries.
-
-##### Settings
-
-| config setting  | explanation |
-|-----------------|-------------|
-| redis_pass                    | Password used to secure the redis server.
-
-### Docker
-
-FIXME
-
-## Testing
-
-Testing is done using [Goss](https://github.com/aelsabbahy/goss). The tests are in the `goss.yaml` file and include variables from the `vars.yaml` file.
-
-### Continuous Integration
-
-This repository is regularly running tests using GitHub Actions. Its configuration can be found in `.github/workflows/test.yml`.
-
-### Local testing
-
-```sh
-$ vagrant up
-```
-
-This should provision a new instance within VirtualBox and run all the tests necessary to verify the Ansible playbook is valid. By default it runs the bare provisioning.
-
-# TODO
-
-- Add LB role
+I have cleaned up some but not all of the cross-distro cruft from the main playbook. It doesn't slow things down much but it is a little busy.
